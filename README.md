@@ -1,3 +1,26 @@
+## rqt_graph (melodic) - 0.4.9-0
+
+The packages in the `rqt_graph` repository were released into the `melodic` distro by running `/usr/bin/bloom-release -r melodic -t melodic rqt_graph` on `Wed, 21 Mar 2018 16:13:40 -0000`
+
+The `rqt_graph` package was released.
+
+Version of package(s) in repository `rqt_graph`:
+
+- upstream repository: https://github.com/ros-visualization/rqt_graph.git
+- release repository: unknown
+- rosdistro version: `null`
+- old version: `None-0`
+- new version: `0.4.9-0`
+
+Versions of tools used:
+
+- bloom version: `0.6.2`
+- catkin_pkg version: `0.4.1`
+- rosdep version: `0.12.1`
+- rosdistro version: `0.6.8`
+- vcstools version: `0.1.40`
+
+
 ## rqt_graph (kinetic) - 0.4.9-0
 
 The packages in the `rqt_graph` repository were released into the `kinetic` distro by running `/usr/bin/bloom-release -r kinetic -t kinetic rqt_graph` on `Fri, 13 Oct 2017 19:24:36 -0000`
