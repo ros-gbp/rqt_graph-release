@@ -52,26 +52,37 @@ from rqt_gui_py.plugin import Plugin
 from .dotcode import RosGraphDotcodeGenerator, NODE_NODE_GRAPH, NODE_TOPIC_ALL_GRAPH, NODE_TOPIC_GRAPH
 from .interactive_graphics_view import InteractiveGraphicsView
 
+try:
+    unicode
+    # we're on python2, or the "unicode" function has already been defined elsewhere
+except NameError:
+    unicode = str
+    # we're on python3
+
 
 class RepeatedWordCompleter(QCompleter):
+
     """A completer that completes multiple times from a list"""
+
     def init(self, parent=None):
         QCompleter.init(self, parent)
 
     def pathFromIndex(self, index):
         path = QCompleter.pathFromIndex(self, index)
-        lst = str(self.widget().text()).split(',')
+        lst = unicode(self.widget().text()).split(',')
         if len(lst) > 1:
             path = '%s, %s' % (','.join(lst[:-1]), path)
         return path
 
     def splitPath(self, path):
-        path = str(path.split(',')[-1]).lstrip(' ')
+        path = unicode(path.split(',')[-1]).lstrip(' ')
         return [path]
 
 
 class NamespaceCompletionModel(QAbstractListModel):
+
     """Ros package and stacknames"""
+
     def __init__(self, linewidget, topics_only):
         super(NamespaceCompletionModel, self).__init__(linewidget)
         self.names = []
@@ -79,8 +90,8 @@ class NamespaceCompletionModel(QAbstractListModel):
     def refresh(self, names):
         namesset = set()
         for n in names:
-            namesset.add(str(n).strip())
-            namesset.add("-%s" % (str(n).strip()))
+            namesset.add(unicode(n).strip())
+            namesset.add("-%s" % (unicode(n).strip()))
         self.names = sorted(namesset)
 
     def rowCount(self, parent):
@@ -119,15 +130,18 @@ class RosGraph(Plugin):
         loadUi(ui_file, self._widget, {'InteractiveGraphicsView': InteractiveGraphicsView})
         self._widget.setObjectName('RosGraphUi')
         if context.serial_number() > 1:
-            self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+            self._widget.setWindowTitle(
+                self._widget.windowTitle() + (' (%d)' % context.serial_number()))
 
         self._scene = QGraphicsScene()
         self._scene.setBackgroundBrush(Qt.white)
         self._widget.graphics_view.setScene(self._scene)
 
         self._widget.graph_type_combo_box.insertItem(0, self.tr('Nodes only'), NODE_NODE_GRAPH)
-        self._widget.graph_type_combo_box.insertItem(1, self.tr('Nodes/Topics (active)'), NODE_TOPIC_GRAPH)
-        self._widget.graph_type_combo_box.insertItem(2, self.tr('Nodes/Topics (all)'), NODE_TOPIC_ALL_GRAPH)
+        self._widget.graph_type_combo_box.insertItem(
+            1, self.tr('Nodes/Topics (active)'), NODE_TOPIC_GRAPH)
+        self._widget.graph_type_combo_box.insertItem(
+            2, self.tr('Nodes/Topics (all)'), NODE_TOPIC_ALL_GRAPH)
         self._widget.graph_type_combo_box.setCurrentIndex(0)
         self._widget.graph_type_combo_box.currentIndexChanged.connect(self._refresh_rosgraph)
 
@@ -139,7 +153,8 @@ class RosGraph(Plugin):
         self._widget.filter_line_edit.editingFinished.connect(self._refresh_rosgraph)
         self._widget.filter_line_edit.setCompleter(completer)
 
-        self.topic_completionmodel = NamespaceCompletionModel(self._widget.topic_filter_line_edit, False)
+        self.topic_completionmodel = NamespaceCompletionModel(
+            self._widget.topic_filter_line_edit, False)
         topic_completer = RepeatedWordCompleter(self.topic_completionmodel, self)
         topic_completer.setCompletionMode(QCompleter.PopupCompletion)
         topic_completer.setWrapAround(True)
@@ -147,12 +162,15 @@ class RosGraph(Plugin):
         self._widget.topic_filter_line_edit.editingFinished.connect(self._refresh_rosgraph)
         self._widget.topic_filter_line_edit.setCompleter(topic_completer)
 
-        self._widget.namespace_cluster_check_box.clicked.connect(self._refresh_rosgraph)
+        self._widget.namespace_cluster_spin_box.valueChanged.connect(self._refresh_rosgraph)
         self._widget.actionlib_check_box.clicked.connect(self._refresh_rosgraph)
         self._widget.dead_sinks_check_box.clicked.connect(self._refresh_rosgraph)
         self._widget.leaf_topics_check_box.clicked.connect(self._refresh_rosgraph)
         self._widget.quiet_check_box.clicked.connect(self._refresh_rosgraph)
         self._widget.unreachable_check_box.clicked.connect(self._refresh_rosgraph)
+        self._widget.group_tf_check_box.clicked.connect(self._refresh_rosgraph)
+        self._widget.hide_tf_nodes_check_box.clicked.connect(self._refresh_rosgraph)
+        self._widget.group_image_check_box.clicked.connect(self._refresh_rosgraph)
 
         self._widget.refresh_graph_push_button.setIcon(QIcon.fromTheme('view-refresh'))
         self._widget.refresh_graph_push_button.pressed.connect(self._update_rosgraph)
@@ -178,30 +196,66 @@ class RosGraph(Plugin):
         context.add_widget(self._widget)
 
     def save_settings(self, plugin_settings, instance_settings):
-        instance_settings.set_value('graph_type_combo_box_index', self._widget.graph_type_combo_box.currentIndex())
+        instance_settings.set_value(
+            'graph_type_combo_box_index', self._widget.graph_type_combo_box.currentIndex())
         instance_settings.set_value('filter_line_edit_text', self._widget.filter_line_edit.text())
-        instance_settings.set_value('topic_filter_line_edit_text', self._widget.topic_filter_line_edit.text())
-        instance_settings.set_value('namespace_cluster_check_box_state', self._widget.namespace_cluster_check_box.isChecked())
-        instance_settings.set_value('actionlib_check_box_state', self._widget.actionlib_check_box.isChecked())
-        instance_settings.set_value('dead_sinks_check_box_state', self._widget.dead_sinks_check_box.isChecked())
-        instance_settings.set_value('leaf_topics_check_box_state', self._widget.leaf_topics_check_box.isChecked())
-        instance_settings.set_value('quiet_check_box_state', self._widget.quiet_check_box.isChecked())
-        instance_settings.set_value('unreachable_check_box_state', self._widget.unreachable_check_box.isChecked())
-        instance_settings.set_value('auto_fit_graph_check_box_state', self._widget.auto_fit_graph_check_box.isChecked())
-        instance_settings.set_value('highlight_connections_check_box_state', self._widget.highlight_connections_check_box.isChecked())
+        instance_settings.set_value(
+            'topic_filter_line_edit_text', self._widget.topic_filter_line_edit.text())
+        instance_settings.set_value(
+            'namespace_cluster_spin_box_value', self._widget.namespace_cluster_spin_box.value())
+        instance_settings.set_value(
+            'actionlib_check_box_state', self._widget.actionlib_check_box.isChecked())
+        instance_settings.set_value(
+            'dead_sinks_check_box_state', self._widget.dead_sinks_check_box.isChecked())
+        instance_settings.set_value(
+            'leaf_topics_check_box_state', self._widget.leaf_topics_check_box.isChecked())
+        instance_settings.set_value(
+            'quiet_check_box_state', self._widget.quiet_check_box.isChecked())
+        instance_settings.set_value(
+            'unreachable_check_box_state', self._widget.unreachable_check_box.isChecked())
+        instance_settings.set_value(
+            'auto_fit_graph_check_box_state', self._widget.auto_fit_graph_check_box.isChecked())
+        instance_settings.set_value(
+            'highlight_connections_check_box_state', self._widget.highlight_connections_check_box.isChecked())
+        instance_settings.set_value(
+            'group_tf_check_box_state', self._widget.group_tf_check_box.isChecked())
+        instance_settings.set_value(
+            'hide_tf_nodes_check_box_state', self._widget.hide_tf_nodes_check_box.isChecked())
+        instance_settings.set_value(
+            'group_image_check_box_state', self._widget.group_image_check_box.isChecked())
+        instance_settings.set_value(
+            'hide_dynamic_reconfigure_check_box_state', self._widget.hide_dynamic_reconfigure_check_box.isChecked())
 
     def restore_settings(self, plugin_settings, instance_settings):
-        self._widget.graph_type_combo_box.setCurrentIndex(int(instance_settings.value('graph_type_combo_box_index', 0)))
+        self._widget.graph_type_combo_box.setCurrentIndex(
+            int(instance_settings.value('graph_type_combo_box_index', 0)))
         self._widget.filter_line_edit.setText(instance_settings.value('filter_line_edit_text', '/'))
-        self._widget.topic_filter_line_edit.setText(instance_settings.value('topic_filter_line_edit_text', '/'))
-        self._widget.namespace_cluster_check_box.setChecked(instance_settings.value('namespace_cluster_check_box_state', True) in [True, 'true'])
-        self._widget.actionlib_check_box.setChecked(instance_settings.value('actionlib_check_box_state', True) in [True, 'true'])
-        self._widget.dead_sinks_check_box.setChecked(instance_settings.value('dead_sinks_check_box_state', True) in [True, 'true'])
-        self._widget.leaf_topics_check_box.setChecked(instance_settings.value('leaf_topics_check_box_state', True) in [True, 'true'])
-        self._widget.quiet_check_box.setChecked(instance_settings.value('quiet_check_box_state', True) in [True, 'true'])
-        self._widget.unreachable_check_box.setChecked(instance_settings.value('unreachable_check_box_state', True) in [True, 'true'])
-        self._widget.auto_fit_graph_check_box.setChecked(instance_settings.value('auto_fit_graph_check_box_state', True) in [True, 'true'])
-        self._widget.highlight_connections_check_box.setChecked(instance_settings.value('highlight_connections_check_box_state', True) in [True, 'true'])
+        self._widget.topic_filter_line_edit.setText(
+            instance_settings.value('topic_filter_line_edit_text', '/'))
+        self._widget.namespace_cluster_spin_box.setValue(
+            int(instance_settings.value('namespace_cluster_spin_box_value', 2)))
+        self._widget.actionlib_check_box.setChecked(
+            instance_settings.value('actionlib_check_box_state', True) in [True, 'true'])
+        self._widget.dead_sinks_check_box.setChecked(
+            instance_settings.value('dead_sinks_check_box_state', True) in [True, 'true'])
+        self._widget.leaf_topics_check_box.setChecked(
+            instance_settings.value('leaf_topics_check_box_state', True) in [True, 'true'])
+        self._widget.quiet_check_box.setChecked(
+            instance_settings.value('quiet_check_box_state', True) in [True, 'true'])
+        self._widget.unreachable_check_box.setChecked(
+            instance_settings.value('unreachable_check_box_state', True) in [True, 'true'])
+        self._widget.auto_fit_graph_check_box.setChecked(
+            instance_settings.value('auto_fit_graph_check_box_state', True) in [True, 'true'])
+        self._widget.highlight_connections_check_box.setChecked(
+            instance_settings.value('highlight_connections_check_box_state', True) in [True, 'true'])
+        self._widget.hide_tf_nodes_check_box.setChecked(
+            instance_settings.value('hide_tf_nodes_check_box_state', False) in [True, 'true'])
+        self._widget.group_tf_check_box.setChecked(
+            instance_settings.value('group_tf_check_box_state', True) in [True, 'true'])
+        self._widget.group_image_check_box.setChecked(
+            instance_settings.value('group_image_check_box_state', True) in [True, 'true'])
+        self._widget.hide_dynamic_reconfigure_check_box.setChecked(
+            instance_settings.value('hide_dynamic_reconfigure_check_box_state', True) in [True, 'true'])
         self.initialized = True
         self._refresh_rosgraph()
 
@@ -210,12 +264,16 @@ class RosGraph(Plugin):
         self._widget.graph_type_combo_box.setEnabled(True)
         self._widget.filter_line_edit.setEnabled(True)
         self._widget.topic_filter_line_edit.setEnabled(True)
-        self._widget.namespace_cluster_check_box.setEnabled(True)
+        self._widget.namespace_cluster_spin_box.setEnabled(True)
         self._widget.actionlib_check_box.setEnabled(True)
         self._widget.dead_sinks_check_box.setEnabled(True)
         self._widget.leaf_topics_check_box.setEnabled(True)
         self._widget.quiet_check_box.setEnabled(True)
         self._widget.unreachable_check_box.setEnabled(True)
+        self._widget.group_tf_check_box.setEnabled(True)
+        self._widget.hide_tf_nodes_check_box.setEnabled(True)
+        self._widget.group_image_check_box.setEnabled(True)
+        self._widget.hide_dynamic_reconfigure_check_box.setEnabled(True)
 
         self._graph = rosgraph.impl.graph.Graph()
         self._graph.set_master_stale(5.0)
@@ -233,17 +291,19 @@ class RosGraph(Plugin):
     def _generate_dotcode(self):
         ns_filter = self._widget.filter_line_edit.text()
         topic_filter = self._widget.topic_filter_line_edit.text()
-        graph_mode = self._widget.graph_type_combo_box.itemData(self._widget.graph_type_combo_box.currentIndex())
+        graph_mode = self._widget.graph_type_combo_box.itemData(
+            self._widget.graph_type_combo_box.currentIndex())
         orientation = 'LR'
-        if self._widget.namespace_cluster_check_box.isChecked():
-            namespace_cluster = 1
-        else:
-            namespace_cluster = 0
+        namespace_cluster = self._widget.namespace_cluster_spin_box.value()
         accumulate_actions = self._widget.actionlib_check_box.isChecked()
         hide_dead_end_topics = self._widget.dead_sinks_check_box.isChecked()
         hide_single_connection_topics = self._widget.leaf_topics_check_box.isChecked()
         quiet = self._widget.quiet_check_box.isChecked()
         unreachable = self._widget.unreachable_check_box.isChecked()
+        group_tf_nodes = self._widget.group_tf_check_box.isChecked()
+        hide_tf_nodes = self._widget.hide_tf_nodes_check_box.isChecked()
+        group_image_nodes = self._widget.group_image_check_box.isChecked()
+        hide_dynamic_reconfigure = self._widget.hide_dynamic_reconfigure_check_box.isChecked()
 
         return self.dotcode_generator.generate_dotcode(
             rosgraphinst=self._graph,
@@ -257,7 +317,11 @@ class RosGraph(Plugin):
             dotcode_factory=self.dotcode_factory,
             orientation=orientation,
             quiet=quiet,
-            unreachable=unreachable)
+            unreachable=unreachable,
+            group_tf_nodes=group_tf_nodes,
+            hide_tf_nodes=hide_tf_nodes,
+            group_image_nodes=group_image_nodes,
+            hide_dynamic_reconfigure=hide_dynamic_reconfigure)
 
     def _update_graph_view(self, dotcode):
         if dotcode == self._current_dotcode:
@@ -296,13 +360,8 @@ class RosGraph(Plugin):
         # layout graph and create qt items
         (nodes, edges) = self.dot_to_qt.dotcode_to_qt_items(self._current_dotcode,
                                                             highlight_level=highlight_level,
-                                                            same_label_siblings=True)
-
-        for node_item in nodes.values():
-            self._scene.addItem(node_item)
-        for edge_items in edges.values():
-            for edge_item in edge_items:
-                edge_item.add_to_scene(self._scene)
+                                                            same_label_siblings=True,
+                                                            scene=self._scene)
 
         self._scene.setSceneRect(self._scene.itemsBoundingRect())
         if self._widget.auto_fit_graph_check_box.isChecked():
@@ -310,7 +369,8 @@ class RosGraph(Plugin):
 
     def _load_dot(self, file_name=None):
         if file_name is None:
-            file_name, _ = QFileDialog.getOpenFileName(self._widget, self.tr('Open graph from file'), None, self.tr('DOT graph (*.dot)'))
+            file_name, _ = QFileDialog.getOpenFileName(
+                self._widget, self.tr('Open graph from file'), None, self.tr('DOT graph (*.dot)'))
             if file_name is None or file_name == '':
                 return
 
@@ -325,12 +385,16 @@ class RosGraph(Plugin):
         self._widget.graph_type_combo_box.setEnabled(False)
         self._widget.filter_line_edit.setEnabled(False)
         self._widget.topic_filter_line_edit.setEnabled(False)
-        self._widget.namespace_cluster_check_box.setEnabled(False)
+        self._widget.namespace_cluster_spin_box.setEnabled(False)
         self._widget.actionlib_check_box.setEnabled(False)
         self._widget.dead_sinks_check_box.setEnabled(False)
         self._widget.leaf_topics_check_box.setEnabled(False)
         self._widget.quiet_check_box.setEnabled(False)
         self._widget.unreachable_check_box.setEnabled(False)
+        self._widget.group_tf_check_box.setEnabled(False)
+        self._widget.hide_tf_nodes_check_box.setEnabled(False)
+        self._widget.group_image_check_box.setEnabled(False)
+        self._widget.hide_dynamic_reconfigure_check_box.setEnabled(False)
 
         self._update_graph_view(dotcode)
 
@@ -338,7 +402,8 @@ class RosGraph(Plugin):
         self._widget.graphics_view.fitInView(self._scene.itemsBoundingRect(), Qt.KeepAspectRatio)
 
     def _save_dot(self):
-        file_name, _ = QFileDialog.getSaveFileName(self._widget, self.tr('Save as DOT'), 'rosgraph.dot', self.tr('DOT graph (*.dot)'))
+        file_name, _ = QFileDialog.getSaveFileName(
+            self._widget, self.tr('Save as DOT'), 'rosgraph.dot', self.tr('DOT graph (*.dot)'))
         if file_name is None or file_name == '':
             return
 
@@ -350,7 +415,8 @@ class RosGraph(Plugin):
         handle.close()
 
     def _save_svg(self):
-        file_name, _ = QFileDialog.getSaveFileName(self._widget, self.tr('Save as SVG'), 'rosgraph.svg', self.tr('Scalable Vector Graphic (*.svg)'))
+        file_name, _ = QFileDialog.getSaveFileName(
+            self._widget, self.tr('Save as SVG'), 'rosgraph.svg', self.tr('Scalable Vector Graphic (*.svg)'))
         if file_name is None or file_name == '':
             return
 
@@ -364,11 +430,13 @@ class RosGraph(Plugin):
         painter.end()
 
     def _save_image(self):
-        file_name, _ = QFileDialog.getSaveFileName(self._widget, self.tr('Save as image'), 'rosgraph.png', self.tr('Image (*.bmp *.jpg *.png *.tiff)'))
+        file_name, _ = QFileDialog.getSaveFileName(
+            self._widget, self.tr('Save as image'), 'rosgraph.png', self.tr('Image (*.bmp *.jpg *.png *.tiff)'))
         if file_name is None or file_name == '':
             return
 
-        img = QImage((self._scene.sceneRect().size() * 2.0).toSize(), QImage.Format_ARGB32_Premultiplied)
+        img = QImage((self._scene.sceneRect().size() * 2.0)
+                     .toSize(), QImage.Format_ARGB32_Premultiplied)
         painter = QPainter(img)
         painter.setRenderHint(QPainter.Antialiasing)
         self._scene.render(painter)
