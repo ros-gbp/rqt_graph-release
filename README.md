@@ -1,3 +1,26 @@
+## rqt_graph (noetic) - 0.4.12-1
+
+The packages in the `rqt_graph` repository were released into the `noetic` distro by running `/usr/bin/bloom-release -r noetic -t noetic rqt_graph` on `Wed, 11 Mar 2020 22:48:50 -0000`
+
+The `rqt_graph` package was released.
+
+Version of package(s) in repository `rqt_graph`:
+
+- upstream repository: https://github.com/ros-visualization/rqt_graph.git
+- release repository: unknown
+- rosdistro version: `null`
+- old version: `null`
+- new version: `0.4.12-1`
+
+Versions of tools used:
+
+- bloom version: `0.9.3`
+- catkin_pkg version: `0.4.16`
+- rosdep version: `0.18.0`
+- rosdistro version: `0.8.0`
+- vcstools version: `0.1.42`
+
+
 ## rqt_graph (kinetic) - 0.4.11-1
 
 The packages in the `rqt_graph` repository were released into the `kinetic` distro by running `/usr/bin/bloom-release -r kinetic -t kinetic rqt_graph` on `Mon, 06 Jan 2020 18:35:16 -0000`
