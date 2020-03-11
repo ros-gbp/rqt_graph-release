@@ -2,6 +2,10 @@
 Changelog for package rqt_graph
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.12 (2020-03-11)
+-------------------
+* bump CMake minimum version to avoid CMP0048 warning
+
 0.4.11 (2020-01-06)
 -------------------
 * skip removal of non-present tf connections (`#40 <https://github.com/ros-visualization/rqt_graph/issues/40>`_)
